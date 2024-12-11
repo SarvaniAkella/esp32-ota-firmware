@@ -40,7 +40,7 @@ void loop() {
     lastCheckTime = millis();
     checkForUpdate();
   }
-Serial.println("Esp32 code from Kusuma system");
+Serial.println("Esp32 code from Sarvani system");
 }
 
 void checkForUpdate() {
