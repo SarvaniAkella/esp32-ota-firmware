@@ -4,8 +4,8 @@
 #include <Preferences.h>
 
 // Wi-Fi credentials
-const char* ssid = "your_SSID";
-const char* password = "your_PASSWORD";
+const char* ssid = "SMBXL";
+const char* password = "Planning#24";
 
 // Firmware URL
 const char* firmwareURL = "https://raw.githubusercontent.com/SarvaniAkella/esp32-ota-firmware/master/basic_blink_firmware.ino.esp32.bin";
@@ -17,7 +17,7 @@ Preferences preferences;
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
-  Serial.println("Hello World123...");
+  Serial.println("Hello 123...");
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi...");
