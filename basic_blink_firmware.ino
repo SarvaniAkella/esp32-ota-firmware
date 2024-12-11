@@ -22,6 +22,7 @@ const int ledPin = 2;
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting...");
+  Serial.println("Updated Esp32 Code");
 
   // Set up LED pin
   pinMode(ledPin, OUTPUT);
@@ -36,6 +37,7 @@ void setup() {
 }
 
 void loop() {
+  Serial.println("Updated Esp32 Code");
   // Check for firmware updates periodically
   if (millis() - lastCheckTime >= checkInterval || lastCheckTime == 0) {
     lastCheckTime = millis();
