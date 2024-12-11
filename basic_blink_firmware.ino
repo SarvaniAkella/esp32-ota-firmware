@@ -3,15 +3,28 @@
 #include <Update.h>
 
 // Wi-Fi credentials
-const char* ssid = "SMBXL";     // Replace with your Wi-Fi SSID
+const char* ssid = "SMBXL";         // Replace with your Wi-Fi SSID
 const char* password = "Planning#24"; // Replace with your Wi-Fi password
 
 // GitHub raw binary URL
-const char* firmwareURL = "https://github.com/SarvaniAkella/esp32-ota-firmware/blob/master/basic_blink_firmware.ino.esp32.bin"; // Replace this with your raw file URL
+const char* firmwareURL = "https://github.com/SarvaniAkella/esp32-ota-firmware/blob/master/basic_blink_firmware.ino.esp32.bin"; // Replace this URL
+
+// Firmware version identifier
+const char* currentVersion = "2.0"; // Replace with your current firmware version
+
+// Check interval (in milliseconds) - e.g., 1 minute
+const unsigned long checkInterval = 60 * 1000;
+unsigned long lastCheckTime = 0;
+
+// LED pin for normal functionality
+const int ledPin = 2;
 
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting...");
+
+  // Set up LED pin
+  pinMode(ledPin, OUTPUT);
 
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
@@ -20,53 +33,73 @@ void setup() {
     Serial.print(".");
   }
   Serial.println("\nConnected to WiFi");
-
-  // Start OTA Update Process
-  performOTAUpdate();
 }
 
 void loop() {
-  // Device's main functionality can go here
-  Serial.println("Running main firmware...");
-  delay(5000);
+  // Check for firmware updates periodically
+  if (millis() - lastCheckTime >= checkInterval || lastCheckTime == 0) {
+    lastCheckTime = millis();
+    checkForUpdate();
+  }
+
+  // Run normal device functionality (e.g., blink LED)
+  digitalWrite(ledPin, HIGH);
+  delay(1000); // LED on for 1 second
+  digitalWrite(ledPin, LOW);
+  delay(1000); // LED off for 1 second
 }
 
-// Function to perform OTA Update
-void performOTAUpdate() {
+void checkForUpdate() {
   Serial.println("Checking for firmware updates...");
 
-  HTTPClient http;
-  http.begin(firmwareURL);
-  int httpCode = http.GET();
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
 
-  if (httpCode == HTTP_CODE_OK) {
-    int contentLength = http.getSize();
-    bool canBegin = Update.begin(contentLength);
+    // Send a HEAD request to check for updates
+    http.begin(firmwareURL);
+    int httpCode = http.GET();
 
-    if (canBegin) {
-      Serial.println("Starting OTA update...");
-      WiFiClient* stream = http.getStreamPtr();
-      size_t written = Update.writeStream(*stream);
+    if (httpCode == HTTP_CODE_OK) {
+      // Simulate a version check by comparing file content length
+      // (In real use, you might check against a server-hosted version file instead)
+      int contentLength = http.getSize();
+      Serial.printf("Server Content Length: %d\n", contentLength);
 
-      if (written == contentLength) {
-        Serial.println("OTA update complete!");
+      // Download and apply the update if applicable
+      if (contentLength > 0) {
+        Serial.println("Update detected. Starting OTA...");
+        performOTA(http);
       } else {
-        Serial.printf("OTA update failed! Written: %d, Expected: %d\n", written, contentLength);
+        Serial.println("No update detected.");
       }
+    } else {
+      Serial.printf("HTTP error: %d\n", httpCode);
+    }
 
+    http.end();
+  } else {
+    Serial.println("WiFi not connected. Skipping update check.");
+  }
+}
+
+void performOTA(HTTPClient& http) {
+  WiFiClient* stream = http.getStreamPtr();
+  size_t contentLength = http.getSize();
+
+  if (Update.begin(contentLength)) {
+    size_t written = Update.writeStream(*stream);
+
+    if (written == contentLength) {
+      Serial.println("Update successful. Rebooting...");
       if (Update.end()) {
-        Serial.println("Update successfully completed!");
-        Serial.println("Rebooting...");
         ESP.restart();
       } else {
         Serial.printf("Update failed. Error #: %d\n", Update.getError());
       }
     } else {
-      Serial.println("Not enough space to start OTA update");
+      Serial.println("Update error. Written length mismatch.");
     }
   } else {
-    Serial.printf("Firmware download failed, HTTP code: %d\n", httpCode);
+    Serial.println("Not enough space for OTA update.");
   }
-
-  http.end();
 }
