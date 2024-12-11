@@ -1,100 +1,76 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <Update.h>
+#include <ArduinoOTA.h>
+#include <Preferences.h>
 
 // Wi-Fi credentials
-const char* ssid = "SMBXL";         // Replace with your Wi-Fi SSID
-const char* password = "Planning#24"; // Replace with your Wi-Fi password
+const char* ssid = "your_SSID";
+const char* password = "your_PASSWORD";
 
-// GitHub raw binary URL
-const char* firmwareURL = "https://raw.githubusercontent.com/SarvaniAkella/esp32-ota-firmware/master/basic_blink_firmware.ino.esp32.bin"; // Replace this URL
+// Firmware URL
+const char* firmwareURL = "https://raw.githubusercontent.com/SarvaniAkella/esp32-ota-firmware/master/basic_blink_firmware.ino.esp32.bin";
 
-// Firmware version identifier
-const char* currentVersion = "2.0"; // Replace with your current firmware version
+// Preferences to store the update flag
+Preferences preferences;
 
-// Check interval (in milliseconds) - e.g., 1 minute
-const unsigned long checkInterval = 60 * 1000;
-unsigned long lastCheckTime = 0;
-
-// LED pin for normal functionality
-const int ledPin = 2;
-
+// Set up WiFi and OTA
 void setup() {
+  // Initialize serial communication
   Serial.begin(115200);
-  Serial.println("Booting...");
-  // Set up LED pin
-  pinMode(ledPin, OUTPUT);
-
+  Serial.println("Hello World123...");
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi...");
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.print(".");
   }
-  Serial.println("\nConnected to WiFi");
+  
+  Serial.println("Connected to WiFi");
+  
+  // Open preferences and check if the firmware was updated
+  preferences.begin("ota", false);
+  bool updateApplied = preferences.getBool("updateApplied", false);
+
+  if (!updateApplied) {
+    Serial.println("No update detected. Checking for updates...");
+    checkForFirmwareUpdate();
+    preferences.putBool("updateApplied", true);  // Flag the update as applied
+  } else {
+    Serial.println("Firmware update already applied.");
+  }
+  Serial.println("Hello World456...");
+  // Start OTA update
+  ArduinoOTA.begin();
+}
+
+// Check for firmware update
+void checkForFirmwareUpdate() {
+  HTTPClient http;
+  http.begin(firmwareURL); // URL to check for firmware update
+  int httpCode = http.GET();
+
+  if (httpCode == 200) {  // If the request is successful
+    int contentLength = http.getSize();
+    Serial.printf("Server Content Length: %d\n", contentLength);
+
+    // If content length is greater than 0, it's an update
+    if (contentLength > 0) {
+      Serial.println("Updating firmware...");
+      ArduinoOTA.handle();  // Handle the OTA update
+    } else {
+      Serial.println("No update detected.");
+    }
+  } else {
+    Serial.printf("HTTP error: %d\n", httpCode);
+  }
+  
+  http.end();
 }
 
 void loop() {
-  // Check for firmware updates periodically
-  if (millis() - lastCheckTime >= checkInterval || lastCheckTime == 0) {
-    lastCheckTime = millis();
-    checkForUpdate();
-  }
-Serial.println("Esp32 code from Sarvani system");
-}
-
-void checkForUpdate() {
-  Serial.println("Checking for firmware updates...");
-
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-
-    // Disable SSL certificate verification
-    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS); 
-    http.begin(firmwareURL); // Set the firmware URL
-
-    int httpCode = http.GET(); // Send the request
-
-    if (httpCode == HTTP_CODE_OK) {
-      // Simulate a version check by comparing file content length
-      int contentLength = http.getSize();
-      Serial.printf("Server Content Length: %d\n", contentLength);
-
-      // Download and apply the update if applicable
-      if (contentLength > 0) {
-        Serial.println("Update detected. Starting OTA...");
-        performOTA(http); // Apply the update
-      } else {
-        Serial.println("No update detected.");
-      }
-    } else {
-      Serial.printf("HTTP error: %d\n", httpCode);
-    }
-
-    http.end(); // End the HTTP request
-  } else {
-    Serial.println("WiFi not connected. Skipping update check.");
-  }
-}
-
-void performOTA(HTTPClient& http) {
-  WiFiClient* stream = http.getStreamPtr();
-  size_t contentLength = http.getSize();
-
-  if (Update.begin(contentLength)) {  // Start the update
-    size_t written = Update.writeStream(*stream);
-
-    if (written == contentLength) {
-      Serial.println("Update successful. Rebooting...");
-      if (Update.end()) {
-        ESP.restart(); // Reboot after the update
-      } else {
-        Serial.printf("Update failed. Error #: %d\n", Update.getError());
-      }
-    } else {
-      Serial.println("Update error. Written length mismatch.");
-    }
-  } else {
-    Serial.println("Not enough space for OTA update.");
-  }
+  Serial.println("Hello World789...");
+  // Handle OTA requests
+  ArduinoOTA.handle();
 }
