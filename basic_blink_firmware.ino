@@ -7,7 +7,7 @@ const char* ssid = "SMBXL";         // Replace with your Wi-Fi SSID
 const char* password = "Planning#24"; // Replace with your Wi-Fi password
 
 // GitHub raw binary URL
-const char* firmwareURL = "https://github.com/SarvaniAkella/esp32-ota-firmware/blob/master/basic_blink_firmware.ino.esp32.bin"; // Replace this URL
+const char* firmwareURL = "https://raw.githubusercontent.com/SarvaniAkella/esp32-ota-firmware/master/basic_blink_firmware.ino.esp32.bin"; // Replace this URL
 
 // Firmware version identifier
 const char* currentVersion = "2.0"; // Replace with your current firmware version
@@ -22,7 +22,6 @@ const int ledPin = 2;
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting...");
-  Serial.println("Start...");
   // Set up LED pin
   pinMode(ledPin, OUTPUT);
 
@@ -36,18 +35,12 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Hello...");
   // Check for firmware updates periodically
   if (millis() - lastCheckTime >= checkInterval || lastCheckTime == 0) {
     lastCheckTime = millis();
     checkForUpdate();
   }
-
-  // Run normal device functionality (e.g., blink LED)
-  digitalWrite(ledPin, HIGH);
-  delay(1000); // LED on for 1 second
-  digitalWrite(ledPin, LOW);
-  delay(1000); // LED off for 1 second
+Serial.println("Esp32 code from Kusuma system");
 }
 
 void checkForUpdate() {
