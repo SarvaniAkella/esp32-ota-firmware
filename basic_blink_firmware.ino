@@ -22,7 +22,6 @@ const int ledPin = 2;
 void setup() {
   Serial.begin(115200);
   Serial.println("Booting...");
-  Serial.println("Updated Esp32 Code");
 
   // Set up LED pin
   pinMode(ledPin, OUTPUT);
@@ -37,7 +36,6 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("Updated Esp32 Code");
   // Check for firmware updates periodically
   if (millis() - lastCheckTime >= checkInterval || lastCheckTime == 0) {
     lastCheckTime = millis();
@@ -57,20 +55,21 @@ void checkForUpdate() {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
 
-    // Send a HEAD request to check for updates
-    http.begin(firmwareURL);
-    int httpCode = http.GET();
+    // Disable SSL certificate verification
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS); 
+    http.begin(firmwareURL); // Set the firmware URL
+
+    int httpCode = http.GET(); // Send the request
 
     if (httpCode == HTTP_CODE_OK) {
       // Simulate a version check by comparing file content length
-      // (In real use, you might check against a server-hosted version file instead)
       int contentLength = http.getSize();
       Serial.printf("Server Content Length: %d\n", contentLength);
 
       // Download and apply the update if applicable
       if (contentLength > 0) {
         Serial.println("Update detected. Starting OTA...");
-        performOTA(http);
+        performOTA(http); // Apply the update
       } else {
         Serial.println("No update detected.");
       }
@@ -78,7 +77,7 @@ void checkForUpdate() {
       Serial.printf("HTTP error: %d\n", httpCode);
     }
 
-    http.end();
+    http.end(); // End the HTTP request
   } else {
     Serial.println("WiFi not connected. Skipping update check.");
   }
@@ -88,13 +87,13 @@ void performOTA(HTTPClient& http) {
   WiFiClient* stream = http.getStreamPtr();
   size_t contentLength = http.getSize();
 
-  if (Update.begin(contentLength)) {
+  if (Update.begin(contentLength)) {  // Start the update
     size_t written = Update.writeStream(*stream);
 
     if (written == contentLength) {
       Serial.println("Update successful. Rebooting...");
       if (Update.end()) {
-        ESP.restart();
+        ESP.restart(); // Reboot after the update
       } else {
         Serial.printf("Update failed. Error #: %d\n", Update.getError());
       }
